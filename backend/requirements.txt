@@ -1,0 +1,7 @@
+# Video Dialogue Locator - ML Pipeline Requirements
+# Note: ffmpeg must be installed on your system separately and available in PATH.
+
+yt-dlp
+openai-whisper
+rapidfuzz
+numpy<2.0.0
