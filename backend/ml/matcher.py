@@ -29,34 +29,50 @@ def normalize(text: str) -> str:
 
 def cluster_overlapping_candidates(candidates: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
-    Groups temporally overlapping candidates to extract distinct spoken instances,
-    selecting the candidate with the highest similarity score for each occurrence.
+    Extracts distinct spoken occurrences using temporal Non-Maximum Suppression (NMS).
+    Greedily selects the highest-scoring candidate and suppresses overlapping candidate
+    windows for that same spoken instance, avoiding transitive chaining of closely-spaced lines.
     """
     if not candidates:
         return []
 
-    # Sort candidates chronologically by start timestamp
-    sorted_by_time = sorted(candidates, key=lambda c: (c["start"], -c["score"]))
-    distinct_instances: List[Dict[str, Any]] = []
+    # Sort descending by similarity score, then earlier start time
+    sorted_by_score = sorted(candidates, key=lambda c: (c["score"], -c["start"]), reverse=True)
+    kept_instances: List[Dict[str, Any]] = []
 
-    current_cluster: List[Dict[str, Any]] = [sorted_by_time[0]]
+    while sorted_by_score:
+        best = sorted_by_score.pop(0)
+        kept_instances.append(best)
 
-    for cand in sorted_by_time[1:]:
-        last_cand = current_cluster[-1]
-        # If the candidate overlaps with the current cluster in time window
-        if cand["start"] <= last_cand["end"] + 0.5:
-            current_cluster.append(cand)
-        else:
-            # Pick best candidate in cluster
-            best_in_cluster = max(current_cluster, key=lambda c: c["score"])
-            distinct_instances.append(best_in_cluster)
-            current_cluster = [cand]
+        b_start = best["start"]
+        b_end = best["end"]
+        b_dur = max(0.5, b_end - b_start)
 
-    if current_cluster:
-        best_in_cluster = max(current_cluster, key=lambda c: c["score"])
-        distinct_instances.append(best_in_cluster)
+        remaining = []
+        for cand in sorted_by_score:
+            c_start = cand["start"]
+            c_end = cand["end"]
 
-    return distinct_instances
+            # Calculate temporal intersection
+            overlap_start = max(b_start, c_start)
+            overlap_end = min(b_end, c_end)
+            overlap = max(0.0, overlap_end - overlap_start)
+
+            # Check if this candidate belongs to the same spoken occurrence
+            is_same_occurrence = (
+                overlap > 0.35 * b_dur
+                or abs(c_start - b_start) < 0.75 * b_dur
+                or (c_start >= b_start and c_start <= b_end)
+                or (b_start >= c_start and b_start <= c_end)
+            )
+
+            if not is_same_occurrence:
+                remaining.append(cand)
+
+        sorted_by_score = remaining
+
+    # Return distinct instances ordered chronologically by timestamp
+    return sorted(kept_instances, key=lambda c: c["start"])
 
 
 def find_phrase(transcript: dict, target: str, threshold: float = 0.9) -> dict:
@@ -126,9 +142,9 @@ def find_phrase(transcript: dict, target: str, threshold: float = 0.9) -> dict:
     all_candidates: List[Dict[str, Any]] = []
     total_words = len(words_list)
 
-    # Dynamic multi-scale window sizing to handle missing/extra words, punctuation, and slight typos
-    min_window = max(1, n_words - 2)
-    max_window = min(total_words, n_words + 3)
+    # Dynamic multi-scale window sizing (+/- 1 word for punctuation, compound words, or missing spaces)
+    min_window = max(1, n_words - 1)
+    max_window = min(total_words, n_words + 1)
 
     for w_size in range(min_window, max_window + 1):
         for i in range(total_words - w_size + 1):
