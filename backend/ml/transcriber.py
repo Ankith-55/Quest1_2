@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 def transcribe(
     audio_path: Union[str, Path],
-    model_size: str = "medium",
+    model_size: str = "base",
     output_json: Optional[Union[str, Path]] = None,
 ) -> dict:
     """

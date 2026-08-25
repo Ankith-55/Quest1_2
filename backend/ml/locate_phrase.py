@@ -10,8 +10,21 @@ Usage:
 import argparse
 import json
 import logging
+import os
 import sys
 from pathlib import Path
+
+try:
+    import certifi
+    ca_bundle = certifi.where()
+    if os.path.exists(ca_bundle):
+        os.environ["SSL_CERT_FILE"] = ca_bundle
+        os.environ["REQUESTS_CA_BUNDLE"] = ca_bundle
+except ImportError:
+    pass
+
+if "SSL_CERT_FILE" in os.environ and not os.path.exists(os.environ["SSL_CERT_FILE"]):
+    del os.environ["SSL_CERT_FILE"]
 
 # Add current module directory to sys.path if invoked directly
 CURRENT_DIR = Path(__file__).resolve().parent
@@ -50,8 +63,8 @@ def main():
     parser.add_argument(
         "--model",
         type=str,
-        default="medium",
-        help="Whisper model size: tiny, base, small, medium, large (default: medium)"
+        default="base",
+        help="Whisper model size: tiny, base, small, medium, large (default: base)"
     )
     parser.add_argument(
         "--threshold",

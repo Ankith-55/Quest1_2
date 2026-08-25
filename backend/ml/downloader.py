@@ -1,8 +1,22 @@
 import logging
+import os
 import subprocess
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
 import yt_dlp
+
+try:
+    import certifi
+    ca_bundle = certifi.where()
+    if os.path.exists(ca_bundle):
+        os.environ["SSL_CERT_FILE"] = ca_bundle
+        os.environ["REQUESTS_CA_BUNDLE"] = ca_bundle
+except ImportError:
+    pass
+
+# Clean up broken SSL_CERT_FILE if pointing to non-existent path
+if "SSL_CERT_FILE" in os.environ and not os.path.exists(os.environ["SSL_CERT_FILE"]):
+    del os.environ["SSL_CERT_FILE"]
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +76,12 @@ def download_video_and_audio(url: str, output_dir: Union[str, Path] = "media") -
         "noplaylist": True,
         "quiet": False,
         "no_warnings": False,
+        "nocheckcertificate": True,
+        "legacyserverconnect": True,
+        "http_headers": {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept-Language": "en-US,en;q=0.9",
+        },
     }
 
     logger.info("Downloading video and audio from URL: %s", url)
@@ -196,6 +216,7 @@ def download_audio(url: str, output_dir: Union[str, Path] = "audio") -> Path:
         "noplaylist": True,
         "quiet": False,
         "no_warnings": False,
+        "nocheckcertificate": True,
     }
 
     logger.info("Downloading audio from URL: %s", url)
