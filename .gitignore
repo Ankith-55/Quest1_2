@@ -31,6 +31,10 @@ wheels/
 # ML / Pipeline Output Artifacts (Downloaded audio, video, frames, debug files)
 output/
 backend/ml/output/
+results/
+backend/ml/results/
+media_cache/
+backend/ml/media_cache/
 *.wav
 *.mp4
 *.mkv

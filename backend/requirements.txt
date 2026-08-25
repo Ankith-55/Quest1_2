@@ -1,7 +1,18 @@
-# Video Dialogue Locator - ML Pipeline Requirements
+# Video Dialogue Locator - Backend & ML Pipeline Requirements
 # Note: ffmpeg must be installed on your system separately and available in PATH.
 
+# Core ML Pipeline
 yt-dlp
 openai-whisper
 rapidfuzz
 numpy<2.0.0
+
+# FastAPI Backend
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+
+# Testing
+pytest
+httpx

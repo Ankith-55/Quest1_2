@@ -10,6 +10,7 @@ from .downloader import (
 )
 from .transcriber import transcribe
 from .matcher import find_phrase, normalize
+from .locate_phrase import run_pipeline
 
 __all__ = [
     "download_audio",
@@ -19,4 +20,5 @@ __all__ = [
     "transcribe",
     "find_phrase",
     "normalize",
+    "run_pipeline",
 ]

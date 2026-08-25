@@ -1,0 +1,108 @@
+#Improving the base model
+Now, i need you to two do 2 things:
+1.corresponding video frame as an imag -> the exact  frame image nedds to be saved as image
+2. Create an output folder,  save all instances (frames) wherver match occurs as png files, and stotre the for each rsult in text file, in this fomrat:
+The timestamp of the identified frame
+● The frame number, where applicable
+● The extracted dialogue text
+● The corresponding video frame as an image
+For example:
+Timestamp : HH:MM:SS.sss
+Frame : <Frame number>
+Text : "My mind rebels at stagnation"
+
+
+#output structuring
+Currently, locate_phrase.py saves all outputs (transcript.json, result.json, frame image) in a fixed output directory, overwriting previous results. Modify locate_phrase.py so that for each run, a new timestamped subfolder is created inside a top-level results/ directory, e.g., results/20250927_103000/ (or using a unique ID). Inside that subfolder, save:
+
+result.json
+
+result.txt (a human-readable summary)
+
+frame.png (or the extracted frame image with any name)
+
+transcript.json (keep it for debugging)
+
+The script should accept an optional --output-dir argument (default "results") to specify the top-level folder, and it will create the run subfolder automatically. All existing functionality (download audio, transcribe, match, frame extraction) remains unchanged. Ensure the code creates directories as needed and does not overwrite previous runs.
+
+#Caching video:
+Just confirm one thing for me: Are videos that have already been downloaded stored locally, or is the same video downloaded again every time I run the program?
+
+#Backend Server Initialization main prompt:
+Create a FastAPI backend that wraps the existing ML pipeline located in `backend/ml/`. The pipeline currently accepts a video URL and target phrase, downloads/uses cached media, transcribes with Whisper, locates phrase occurrences, extracts frames, and saves results into a new timestamped folder inside `backend/ml/results/`.
+
+Requirements:
+
+1. **Project Structure**:
+   - Create a new package `backend/app/` (alongside `backend/ml/`) containing:
+     - `main.py` – FastAPI app initialization, static file serving.
+     - `api/routes.py` – Endpoints.
+     - `api/schemas.py` – Pydantic models.
+     - `core/config.py` – Settings from environment.
+     - `services/pipeline.py` – Wraps the ML pipeline call (import from `backend.ml`).
+     - `services/job_manager.py` – In-memory job store with thread lock.
+   - The existing `ml/` folder should be importable; add `__init__.py` files as needed.
+
+2. **API Endpoints**:
+   - `POST /jobs`:
+     - Accepts JSON body: `{"url": str, "target_text": str, "model_size": str = "base", "threshold": float = 0.9}`.
+     - Creates a job, returns `{"job_id": str, "status": "queued"}` with HTTP 202.
+     - Starts the pipeline in a background thread using FastAPI `BackgroundTasks`.
+   - `GET /jobs/{job_id}`:
+     - Returns current job status: `queued`, `processing`, `completed`, `failed`.
+     - If completed, includes `result` object with:
+       - `timestamp` (formatted HH:MM:SS.sss)
+       - `frame_number` (integer)
+       - `text` (matched phrase text)
+       - `confidence` (score)
+       - `image_path` (relative path to saved frame inside the job's output folder)
+       - `matches` (list of all matches above threshold, each with timestamp, frame_number, text, image_path)
+     - If failed, includes `error` string.
+     - Returns 404 if job not found.
+
+3. **Integration with ML Pipeline**:
+   - Import functions from `backend.ml` (e.g., `locate_phrase` run function, or the individual download/transcribe/match/extract functions).
+   - You may need to refactor `locate_phrase.py` to expose a callable function `run_pipeline(url, target_text, model_size="base", threshold=0.9, output_base_dir=Path("results"))` that returns a dict with the result summary. This function should handle caching, create a new run folder, save output files, and return paths.
+   - Ensure the background task calls this function and updates the job status accordingly.
+
+4. **Static File Serving**:
+   - Serve the `backend/ml/results/` directory (or a dedicated output directory) at `/output` using FastAPI `StaticFiles`.
+   - The returned `image_path` should be a relative path like `20260825_175305/frames/frame_1_00_01_33_200.png` that can be appended to `/output/` to access the image.
+
+5. **Configuration**:
+   - Use environment variables for `MODEL_SIZE` (default `base`), `FUZZY_THRESHOLD` (default `0.9`), `OUTPUT_BASE_DIR` (default `backend/ml/results`), `MAX_CONCURRENT_JOBS` (optional).
+   - Provide a `.env.example`.
+
+6. **Error Handling**:
+   - Catch exceptions in the pipeline, update job to `failed` with error message.
+   - Validate input: URL must be non-empty, target text must be non-empty.
+   - Log all steps.
+
+7. **Testing**:
+   - Add basic unit tests for `job_manager.py` and API routes (using FastAPI TestClient). Mock the pipeline call to avoid long runs.
+   - Ensure CI can run tests without downloading large models.
+
+8. **Documentation**:
+   - Add comments explaining the flow.
+   - Update README with how to run the backend (uvicorn command).
+   - Include `requirements.txt` additions if needed (fastapi, uvicorn, pydantic, python-multipart? not needed for JSON).
+
+Assume you have access to the existing ML code in `backend/ml/` and that the folder structure is as follows:
+backend/
+├── ml/
+│ ├── locate_phrase.py (contains main logic, maybe a run_pipeline function)
+│ ├── downloader.py
+│ ├── transcriber.py
+│ ├── matcher.py
+│ ├── frame_extractor.py
+│ ├── ...
+│ └── results/ (output directory, will be served)
+├── venv/
+├── requirements.txt
+└── (new) app/
+
+Make sure the FastAPI app can be run with:
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+
+from the `backend/` directory.

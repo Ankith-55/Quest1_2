@@ -47,14 +47,14 @@ def get_video_fps(video_path: Union[str, Path], default_fps: float = 30.0) -> fl
     return default_fps
 
 
-def download_video_and_audio(url: str, output_dir: Union[str, Path] = "media") -> Dict[str, Any]:
+def download_video_and_audio(url: str, output_dir: Union[str, Path] = "media_cache") -> Dict[str, Any]:
     """
     Downloads video and audio from a URL using yt-dlp, extracts 16kHz mono WAV for transcription,
-    and returns media metadata including FPS.
+    and returns media metadata including FPS. Reuses already downloaded media if found in cache.
 
     Args:
         url: The video URL (YouTube, ok.ru, etc.).
-        output_dir: Directory where the video and audio files will be stored.
+        output_dir: Directory where the video and audio files will be cached.
 
     Returns:
         dict: {
@@ -84,6 +84,45 @@ def download_video_and_audio(url: str, output_dir: Union[str, Path] = "media") -
         },
     }
 
+    # Step A: Check if video and audio are already in local cache
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info_dict = ydl.extract_info(url, download=False)
+            video_id = info_dict.get("id", "video")
+            video_title = info_dict.get("title", "")
+            duration = float(info_dict.get("duration", 0.0) or 0.0)
+            raw_fps = info_dict.get("fps")
+
+            candidates = list(output_path.glob(f"{video_id}.*"))
+            candidates = [c for c in candidates if c.suffix.lower() not in [".wav", ".part", ".ytdl"]]
+            cached_wav = output_path / f"{video_id}_16k_mono.wav"
+
+            if candidates and candidates[0].stat().st_size > 0:
+                video_path = candidates[0]
+                fps = float(raw_fps) if raw_fps else get_video_fps(video_path)
+
+                # Ensure 16k WAV exists too
+                if not cached_wav.exists() or cached_wav.stat().st_size == 0:
+                    logger.info("Extracting 16kHz mono WAV from cached video: %s -> %s", video_path, cached_wav)
+                    ffmpeg_cmd = [
+                        "ffmpeg", "-y", "-i", str(video_path),
+                        "-vn", "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1",
+                        str(cached_wav)
+                    ]
+                    subprocess.run(ffmpeg_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+
+                logger.info("Using cached video (%s) and audio (%s). Skipping download!", video_path.name, cached_wav.name)
+                return {
+                    "video_path": video_path,
+                    "audio_path": cached_wav,
+                    "fps": fps,
+                    "duration": duration,
+                    "title": video_title
+                }
+    except Exception as e:
+        logger.debug("Cache lookup notice: %s. Proceeding with download.", e)
+
+    # Step B: Download video if not in cache
     logger.info("Downloading video and audio from URL: %s", url)
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -99,10 +138,8 @@ def download_video_and_audio(url: str, output_dir: Union[str, Path] = "media") -
 
     video_path = Path(video_filepath)
     if not video_path.exists():
-        # Search if extension differed during merge (e.g. .mkv / .webm / .mp4)
         candidates = list(output_path.glob(f"{video_id}.*"))
-        # Exclude .wav
-        candidates = [c for c in candidates if c.suffix.lower() != ".wav"]
+        candidates = [c for c in candidates if c.suffix.lower() not in [".wav", ".part", ".ytdl"]]
         if candidates:
             video_path = candidates[0]
         else:
@@ -113,33 +150,33 @@ def download_video_and_audio(url: str, output_dir: Union[str, Path] = "media") -
 
     # Convert audio track to 16kHz mono WAV for Whisper
     output_wav_path = output_path / f"{video_id}_16k_mono.wav"
-    logger.info("Extracting 16kHz mono WAV audio: %s -> %s", video_path, output_wav_path)
+    if not output_wav_path.exists() or output_wav_path.stat().st_size == 0:
+        logger.info("Extracting 16kHz mono WAV audio: %s -> %s", video_path, output_wav_path)
+        ffmpeg_cmd = [
+            "ffmpeg",
+            "-y",
+            "-i", str(video_path),
+            "-vn",
+            "-acodec", "pcm_s16le",
+            "-ar", "16000",
+            "-ac", "1",
+            str(output_wav_path)
+        ]
 
-    ffmpeg_cmd = [
-        "ffmpeg",
-        "-y",
-        "-i", str(video_path),
-        "-vn",
-        "-acodec", "pcm_s16le",
-        "-ar", "16000",
-        "-ac", "1",
-        str(output_wav_path)
-    ]
-
-    try:
-        subprocess.run(
-            ffmpeg_cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            check=True
-        )
-    except subprocess.CalledProcessError as e:
-        logger.error("ffmpeg audio extraction failed: %s", e.stderr)
-        raise RuntimeError(f"ffmpeg audio extraction failed: {e.stderr}") from e
-    except FileNotFoundError as e:
-        logger.error("ffmpeg executable not found in system PATH.")
-        raise RuntimeError("ffmpeg executable not found in system PATH.") from e
+        try:
+            subprocess.run(
+                ffmpeg_cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=True
+            )
+        except subprocess.CalledProcessError as e:
+            logger.error("ffmpeg audio extraction failed: %s", e.stderr)
+            raise RuntimeError(f"ffmpeg audio extraction failed: {e.stderr}") from e
+        except FileNotFoundError as e:
+            logger.error("ffmpeg executable not found in system PATH.")
+            raise RuntimeError("ffmpeg executable not found in system PATH.") from e
 
     logger.info("Media ready. Video: %s, Audio: %s, FPS: %s", video_path, output_wav_path, fps)
     return {
