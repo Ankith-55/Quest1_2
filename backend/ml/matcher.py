@@ -125,26 +125,39 @@ def find_phrase(transcript: dict, target: str, threshold: float = 0.9) -> dict:
 
     all_candidates: List[Dict[str, Any]] = []
     total_words = len(words_list)
-    window_size = min(n_words, total_words)
 
-    for i in range(total_words - window_size + 1):
-        window = words_list[i : i + window_size]
-        window_raw_text = " ".join(w["word"] for w in window)
-        norm_window = normalize(window_raw_text)
+    # Dynamic multi-scale window sizing to handle missing/extra words, punctuation, and slight typos
+    min_window = max(1, n_words - 2)
+    max_window = min(total_words, n_words + 3)
 
-        ratio = fuzz.ratio(norm_target, norm_window) / 100.0
-        partial_ratio = fuzz.partial_ratio(norm_target, norm_window) / 100.0
-        match_score = max(ratio, partial_ratio)
+    for w_size in range(min_window, max_window + 1):
+        for i in range(total_words - w_size + 1):
+            window = words_list[i : i + w_size]
+            window_raw_text = " ".join(w["word"] for w in window)
+            norm_window = normalize(window_raw_text)
 
-        start_time = float(window[0]["start"])
-        end_time = float(window[-1]["end"])
+            ratio = fuzz.ratio(norm_target, norm_window) / 100.0
+            token_sort = fuzz.token_sort_ratio(norm_target, norm_window) / 100.0
 
-        all_candidates.append({
-            "start": round(start_time, 3),
-            "end": round(end_time, 3),
-            "text": window_raw_text,
-            "score": round(match_score, 4),
-        })
+            # Safe length-penalized partial ratio
+            len_ratio = (
+                min(len(norm_target), len(norm_window)) / max(len(norm_target), len(norm_window))
+                if max(len(norm_target), len(norm_window)) > 0
+                else 0
+            )
+            partial_ratio = (fuzz.partial_ratio(norm_target, norm_window) / 100.0) * (len_ratio ** 0.5)
+
+            match_score = max(ratio, token_sort, partial_ratio)
+
+            start_time = float(window[0]["start"])
+            end_time = float(window[-1]["end"])
+
+            all_candidates.append({
+                "start": round(start_time, 3),
+                "end": round(end_time, 3),
+                "text": window_raw_text,
+                "score": round(match_score, 4),
+            })
 
     # Sort all candidates descending by score
     all_candidates.sort(key=lambda c: c["score"], reverse=True)

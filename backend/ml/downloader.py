@@ -84,6 +84,46 @@ def download_video_and_audio(url: str, output_dir: Union[str, Path] = "media_cac
         },
     }
 
+    # Step 0: Check if url is a local file path or matches a local video in backend directory
+    raw_path = Path(url)
+    backend_root = Path(__file__).resolve().parent.parent
+    local_candidates = [
+        raw_path,
+        backend_root / url,
+        backend_root / raw_path.name,
+    ]
+    # Also search for local files containing the video ID or name in backend directory
+    if not any(p.exists() and p.is_file() for p in local_candidates):
+        for local_f in backend_root.glob("*.mp4"):
+            if raw_path.name in local_f.name or (len(url) > 5 and url in local_f.name):
+                local_candidates.append(local_f)
+                break
+
+    for local_file in local_candidates:
+        if local_file.exists() and local_file.is_file() and local_file.stat().st_size > 1000000: # > 1MB
+            video_path = local_file
+            video_id = "".join(c for c in video_path.stem if c.isalnum()) or "local_video"
+            cached_wav = output_path / f"{video_id}_16k_mono.wav"
+            fps = get_video_fps(video_path)
+
+            if not cached_wav.exists() or cached_wav.stat().st_size == 0:
+                logger.info("Extracting 16kHz mono WAV from local video: %s -> %s", video_path, cached_wav)
+                ffmpeg_cmd = [
+                    "ffmpeg", "-y", "-i", str(video_path),
+                    "-vn", "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1",
+                    str(cached_wav)
+                ]
+                subprocess.run(ffmpeg_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+
+            logger.info("Using local video (%s) and audio (%s).", video_path.name, cached_wav.name)
+            return {
+                "video_path": video_path,
+                "audio_path": cached_wav,
+                "fps": fps,
+                "duration": 0.0,
+                "title": video_path.stem
+            }
+
     # Step A: Check if video and audio are already in local cache
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -93,11 +133,37 @@ def download_video_and_audio(url: str, output_dir: Union[str, Path] = "media_cac
             duration = float(info_dict.get("duration", 0.0) or 0.0)
             raw_fps = info_dict.get("fps")
 
+            # Check if there is an existing full local video with this ID in backend root
+            for local_f in backend_root.glob(f"*{video_id}*.mp4"):
+                if local_f.stat().st_size > 10000000: # > 10MB
+                    video_path = local_f
+                    fps = float(raw_fps) if raw_fps else get_video_fps(video_path)
+                    cached_wav = output_path / f"{video_id}_16k_mono.wav"
+                    if not cached_wav.exists() or cached_wav.stat().st_size < 1000000:
+                        logger.info("Extracting full 16kHz mono WAV from local video: %s -> %s", video_path, cached_wav)
+                        ffmpeg_cmd = [
+                            "ffmpeg", "-y", "-i", str(video_path),
+                            "-vn", "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1",
+                            str(cached_wav)
+                        ]
+                        subprocess.run(ffmpeg_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+                    logger.info("Using local full video (%s) for ID %s.", video_path.name, video_id)
+                    return {
+                        "video_path": video_path,
+                        "audio_path": cached_wav,
+                        "fps": fps,
+                        "duration": duration,
+                        "title": video_title or video_path.stem
+                    }
+
             candidates = list(output_path.glob(f"{video_id}.*"))
             candidates = [c for c in candidates if c.suffix.lower() not in [".wav", ".part", ".ytdl"]]
             cached_wav = output_path / f"{video_id}_16k_mono.wav"
 
-            if candidates and candidates[0].stat().st_size > 0:
+            # Check if an incomplete download part file exists
+            has_part_file = any(output_path.glob(f"{video_id}.*part*"))
+
+            if candidates and candidates[0].stat().st_size > 50000000 and not has_part_file:
                 video_path = candidates[0]
                 fps = float(raw_fps) if raw_fps else get_video_fps(video_path)
 
