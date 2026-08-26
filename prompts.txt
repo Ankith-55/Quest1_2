@@ -127,3 +127,32 @@ Requirements:
 - After changes, run `npm run build` to verify no compilation errors.
 
 The goal is a clean, elegant, non-AI-generated look using the Gruvbox earthy palette.
+
+
+#Challenged_faced.md:
+Challenges_faced:
+->mutliple outputs
+->whisper multiple models 
+->multiple language problem (although whsiper supports, transliteration problem)
+->polling earlier problem in prev verison
+->caching
+->storing results everytime in structred way 
+
+
+these are the challnegse we faced in the project
+Create a document isnide documentations named 'Challenges_faced.md'
+Describe 2-3 lines for each challenge emntione,d which we encountered in this porject.
+
+
+
+#SRS.md:
+Generate a concise SRS document for the Video Dialogue Locator project. Base it on the existing codebase in `backend/` and `frontend/`. Include sections: Introduction, Overall Description, Functional Requirements (numbered FR1...), Non-Functional Requirements (NFR1...), and Assumptions/Dependencies. Focus on the ASR-first pipeline, in-memory job manager, polling API, and multi-match frame display. Keep the tone formal but not overly verbose. Output as Markdown to `docs/SRS.md`.
+
+
+#arch_diagram.md:
+There is a folder called documentations, specifically for all .md files. Your first task is to create arch_diagram.md file inside it, whcih contaisn the whole architecture diagram of the project, including everything frontend and backend. 
+Create a simple, clean arch diagram , not bvery complex, only the arch diagram
+
+
+Design-decision.md:
+Create a design-decisions document (`docs/design-decisions.md`) that explains the key technical choices and trade-offs in this project. For each decision, describe the alternatives considered, the chosen approach, and why it was selected. Reference the implemented code. Cover: ASR vs OCR, Whisper model size and escalation, download strategy (audio-only + low-res video), frame extraction method, fuzzy matching algorithm, job handling (BackgroundTasks vs Celery), polling, caching, multilingual transliteration, and error/confidence handling. Use a table or bullet format for clarity. Be concise but thorough.
