@@ -1,6 +1,0 @@
-->mutliple outputs
-->whisper multiple models 
-->ok.ru geoblocking / VPN requirement for Indian IPs
-->polling earlier problem in prev verison
-->caching
-->storing results everytime in structred way
