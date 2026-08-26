@@ -132,22 +132,7 @@
 
 ---
 
-## 9. Multilingual Support & Transliteration Handling
-
-* **Context:** Videos may contain foreign languages, regional accents, or non-ASCII characters.
-* **Alternatives Considered:**
-  * *English-Only Whisper Models (`base.en`, `small.en`):* Faster on English, but fails completely on non-English audio.
-  * *External Translation Pipelines (e.g., DeepL / Google Translate API):* Adds external dependency, cost, and latency.
-  * *Multilingual Whisper with Unicode Normalization:* Use standard Whisper multilingual checkpoints and normalize Unicode strings.
-* **Chosen Approach:** Multilingual Whisper architecture with robust Unicode normalization.
-* **Rationale:**
-  * Standard Whisper models (`tiny`, `base`, `small`, `medium`, `large`) support 99 languages natively with automatic language detection.
-  * The normalization pipeline in `backend/ml/matcher.py` strips diacritics and accents using standard Unicode character substitutions, allowing phonetic fuzzy matching to bridge minor transliteration differences.
-* **Code Reference:** `backend/ml/matcher.py`, `backend/ml/transcriber.py`
-
----
-
-## 10. Error, Confidence & Ambiguity Handling
+## 9. Error, Confidence & Ambiguity Handling
 
 * **Context:** Audio quality can be degraded by background music, sound effects, or speech overlap. When a phrase is not found, returning an empty response leaves the user confused.
 * **Alternatives Considered:**
