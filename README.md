@@ -1,4 +1,4 @@
-# Video Dialogue Locator 🎬🔍
+# Video Dialogue Locator 
 
 An AI-powered, full-stack web application and automated ML pipeline designed to locate the exact timestamp, frame number, and high-resolution video frame where a specific spoken dialogue occurs in any online or local video.
 
@@ -6,18 +6,18 @@ Built with **FastAPI**, **OpenAI Whisper ASR**, **RapidFuzz**, **FFmpeg**, and *
 
 ---
 
-## ✨ Key Features
+##  Key Features
 
 * **ASR-First Dialogue Localization**: Uses OpenAI Whisper to transcribe audio directly with word-level timestamps, eliminating dependency on burned-in on-screen text or subtitle tracks.
 * **Temporal Non-Maximum Suppression (NMS)**: Suppresses duplicate frames from adjacent sliding-window hits while accurately capturing all distinct repeated occurrences across a video.
-* **Accurate & Fast Frame Extraction**: Computes exact frame numbers ($\text{Frame} = \text{round}(\text{timestamp} \times \text{FPS})$) via `ffprobe` stream metadata and extracts lossless PNG frames using FFmpeg fast input seek in $< 300\text{ms}$.
+* **Accurate & Fast Frame Extraction**: Computes exact frame numbers (`Frame Number = round(timestamp * FPS)`) via `ffprobe` stream metadata and extracts lossless PNG frames using FFmpeg fast input seek in `< 300 ms`.
 * **Persistent Media Caching**: Caches downloaded video and extracted 16kHz mono audio in `media_cache/`, speeding up repeated queries on the same video from minutes to under 3 seconds.
-* **Asynchronous REST API**: FastAPI backend with non-blocking `POST /jobs` job creation, thread-safe in-memory state tracking (`queued` $\rightarrow$ `processing` $\rightarrow$ `completed` / `failed`), and static image serving at `/output`.
+* **Asynchronous REST API**: FastAPI backend with non-blocking `POST /jobs` job creation, thread-safe in-memory state tracking (`queued` → `processing` → `completed` / `failed`), and static image serving at `/output`.
 * **Interactive Gruvbox Web UI**: Single-page dashboard featuring one-click sample presets, Whisper model selector (`tiny` to `large`), fuzzy similarity threshold slider, real-time polling progress, full-resolution image modal, and search history drawer.
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 | Layer | Technology | Purpose |
 | :--- | :--- | :--- |
@@ -32,7 +32,7 @@ Built with **FastAPI**, **OpenAI Whisper ASR**, **RapidFuzz**, **FFmpeg**, and *
 
 ---
 
-## 🏗️ Architecture Diagram
+##  Architecture Diagram
 
 ```mermaid
 flowchart TD
@@ -78,7 +78,7 @@ flowchart TD
 
 ---
 
-## 📚 Project Documentation
+##  Project Documentation
 
 For deeper technical insights, explore the dedicated documentation files:
 
@@ -89,7 +89,7 @@ For deeper technical insights, explore the dedicated documentation files:
 
 ---
 
-## 📸 Screenshots
+##  Screenshots
 
 ### 1. Job Submission & Configuration
 ![Input Form](documentations/screenshots/input.png)
@@ -99,7 +99,7 @@ For deeper technical insights, explore the dedicated documentation files:
 
 ---
 
-## 📋 Prerequisites
+##  Prerequisites
 
 Ensure the following tools are installed on your system before running:
 
@@ -110,12 +110,12 @@ Ensure the following tools are installed on your system before running:
 
 ---
 
-## 🚀 Getting Started (Run Locally)
+##  Getting Started (Run Locally)
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/Ankith-55/Quest1_2.git
-cd Quest1_2
+git clone https://github.com/Ankith-55/Quest1.git
+cd Quest1
 ```
 
 ---
@@ -175,7 +175,7 @@ cd Quest1_2
 
 ---
 
-## 💡 Basic Usage
+##  Basic Usage
 
 1. Open [http://localhost:5173](http://localhost:5173) in your browser.
 2. Enter any supported video URL (e.g., YouTube, ok.ru, or direct MP4 link) or click one of the preset sample buttons.

@@ -1,9 +1,6 @@
 # Technical Design Decisions & Architecture Trade-Offs
 
-**Project:** Video Dialogue Locator  
 **Author:** Ankith Vijayyan  
-**Date:** 2026-08-26  
-**Document Version:** 1.0.0  
 
 ---
 

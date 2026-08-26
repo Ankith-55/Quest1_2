@@ -42,15 +42,3 @@ flowchart TD
     Static -->|"Display Frame Results"| UI
 ```
 
----
-
-### Core Workflow
-
-1. **Frontend**: User inputs a video URL and target dialogue phrase. The client submits a job and polls for status updates.
-2. **Backend**: FastAPI manages job lifecycle states (`queued` $\rightarrow$ `processing` $\rightarrow$ `completed` / `failed`) and serves generated images.
-3. **Pipeline**:
-   - **Downloader**: Fetches video/audio via `yt-dlp` and checks local media cache.
-   - **Whisper**: Transcribes audio and extracts word-level timestamps.
-   - **Fuzzy Matcher**: Locates target phrase occurrences using `RapidFuzz` and filters overlaps via Non-Maximum Suppression (NMS).
-   - **Frame Extractor**: Grabs the exact PNG frame at the match timestamp using `FFmpeg`.
-4. **Storage**: Stores extracted PNG images and JSON metadata, served back to the UI.

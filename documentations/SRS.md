@@ -1,10 +1,7 @@
 # Software Requirements Specification (SRS)
 ## Video Dialogue Locator System
-
-**Document Version:** 1.0.0  
-**Status:** Approved / Implemented  
-**Date:** 2026-08-26  
-**Authors:** Ankith Vijayyan  
+ 
+**Authors:** Ankith Vijayyan 
 
 ---
 
@@ -99,14 +96,14 @@ The Video Dialogue Locator operates as a decoupled, multi-tiered application:
 
 ### 3.4 Frame Number Calculation & Extraction
 * **FR-4.1 (Mathematical Frame Mapping):** The system shall calculate exact frame numbers using the formula:
-  $$\text{Frame Number} = \text{round}(\text{timestamp\_seconds} \times \text{FPS})$$
+  `Frame Number = round(timestamp_seconds * FPS)`
 * **FR-4.2 (High-Resolution Frame Extraction):** The system shall invoke FFmpeg using fast input seeking (`-ss`) to extract high-resolution PNG image frames for every identified occurrence.
 * **FR-4.3 (Structured File Output):** The system shall save primary frame captures (`frame.png`), individual multi-match frames (`frames/frame_N_HH_MM_SS_sss.png`), human-readable reports (`result.txt`), and JSON outputs (`result.json`) in an isolated `results/{job_id}/` folder.
 
 ### 3.5 Asynchronous REST API & Job Management
 * **FR-5.1 (Job Submission):** `POST /jobs` shall accept `url`, `target_text`, `model_size`, and `threshold`, returning HTTP `202 Accepted` with a unique `job_id` and initial status `queued`.
 * **FR-5.2 (Background Execution):** The backend shall execute pipeline tasks asynchronously using FastAPI `BackgroundTasks` without blocking API throughput.
-* **FR-5.3 (Thread-Safe Job Tracking):** The `JobManager` shall track job states (`queued` $\rightarrow$ `processing` $\rightarrow$ `completed` / `failed`) protected by a `threading.Lock`.
+* **FR-5.3 (Thread-Safe Job Tracking):** The `JobManager` shall track job states (`queued` → `processing` → `completed` / `failed`) protected by a `threading.Lock`.
 * **FR-5.4 (Status Polling):** `GET /jobs/{job_id}` shall return the current state, execution timing, error messages, and completed result payload including relative image URLs.
 * **FR-5.5 (Job History):** `GET /jobs` shall return a list of all historical search jobs.
 * **FR-5.6 (Static Asset Serving):** The API shall mount `/output` pointing to the results directory to serve frame images directly to web clients.
@@ -124,12 +121,12 @@ The Video Dialogue Locator operates as a decoupled, multi-tiered application:
 ## 4. Non-Functional Requirements
 
 ### 4.1 Performance & Latency
-* **NFR-1.1 (Non-Blocking API):** `POST /jobs` response latency shall be $< 100\text{ ms}$.
+* **NFR-1.1 (Non-Blocking API):** `POST /jobs` response latency shall be `< 100 ms`.
 * **NFR-1.2 (Cache Speedup):** Re-running searches on previously cached videos shall bypass network downloading, reducing end-to-end execution to transcription/matching duration only.
-* **NFR-1.3 (Efficient Frame Extraction):** FFmpeg fast input seek (`-ss` before `-i`) shall extract single frames in $< 500\text{ ms}$.
+* **NFR-1.3 (Efficient Frame Extraction):** FFmpeg fast input seek (`-ss` before `-i`) shall extract single frames in `< 500 ms`.
 
 ### 4.2 Accuracy & Precision
-* **NFR-2.1 (Temporal Accuracy):** Extracted frame timestamps shall align within $\pm 1$ video frame interval ($< 0.05\text{ s}$) of the spoken dialogue onset.
+* **NFR-2.1 (Temporal Accuracy):** Extracted frame timestamps shall align within ±1 video frame interval (`< 0.05 s`) of the spoken dialogue onset.
 * **NFR-2.2 (Robust Fuzzy Matching):** The sliding-window algorithm shall handle minor speech-to-text phonetic discrepancies, word contractions, and background music noise.
 
 ### 4.3 Reliability & Error Handling
@@ -141,7 +138,7 @@ The Video Dialogue Locator operates as a decoupled, multi-tiered application:
 * **NFR-4.2 (Zero Placeholder Policy):** All visual components shall render actual live-computed data and genuine extracted video frame artifacts.
 
 ### 4.5 Maintainability & Testability
-* **NFR-5.1 (Automated Test Suite):** Backend unit and integration tests (`tests/test_job_manager.py`, `tests/test_routes.py`) shall run in $< 2\text{ s}$ using mocks without downloading live models.
+* **NFR-5.1 (Automated Test Suite):** Backend unit and integration tests (`tests/test_job_manager.py`, `tests/test_routes.py`) shall run in `< 2 s` using mocks without downloading live models.
 * **NFR-5.2 (Modular Decoupling):** The ML engine (`backend/ml`) shall remain fully functional both as an independent CLI script (`locate_phrase.py`) and as a module imported by FastAPI services.
 
 ---
