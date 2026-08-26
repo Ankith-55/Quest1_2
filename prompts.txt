@@ -1,3 +1,94 @@
+#base-model:
+# AI Development Prompt: Build Core ML Pipeline for Video Dialogue Locator
+
+## Context
+We are building a system to locate the first occurrence of a spoken target phrase in a video and extract the timestamp. This is the **core ML model** step, before adding backend API and frontend. You will generate files inside the existing `backend/ml` folder. I will run the script manually using the virtual environment located at `backend/venv`.
+
+## Project Structure (existing)
+root/
+├── backend/
+│ ├── venv/ # virtual environment (already exists)
+│ ├── ml/ # you will create files here
+│ └── requirements.txt # you will create/update this file
+├── frontend/ # ignore for now
+
+## Task
+Create all required files inside `backend/ml/` that implement the following pipeline:
+
+1. **Download audio only** from a given video URL using `yt-dlp` (bestaudio format) and convert to 16kHz mono WAV using `ffmpeg`.
+2. **Transcribe** the audio using OpenAI Whisper **`large`** model with `word_timestamps=True`. Save the full transcript as JSON for debugging.
+3. **Fuzzy match** the target phrase in the transcript using a sliding window over word-level timestamps. Use `rapidfuzz` with both `ratio` and `partial_ratio`. Threshold default `0.9`. Return the best match (start timestamp, matched text, confidence score) or a list of best candidates if none above threshold.
+4. Provide a command-line script that takes a video URL and target phrase as arguments, runs the pipeline, prints results, and saves debug files (`transcript.json`, `result.json`) into an output directory.
+
+## Files to Create (all inside `backend/ml/`)
+
+### `downloader.py`
+- Function `download_audio(url: str, output_dir: str = "audio") -> Path`
+  - Use `yt-dlp` with `format="bestaudio/best"` to download audio.
+  - Convert to WAV using `ffmpeg`: `ffmpeg -y -i input -vn -acodec pcm_s16le -ar 16000 -ac 1 output.wav`
+  - Return path to WAV file.
+  - Ensure output directory exists.
+- Include error handling and logging.
+
+### `transcriber.py`
+- Function `transcribe(audio_path: Path, model_size: str = "large", output_json: Path = None) -> dict`
+  - Load Whisper model with specified size.
+  - Call `model.transcribe(str(audio_path), word_timestamps=True)`
+  - If `output_json` provided, save the result dict as JSON.
+  - Return the result dict (contains `segments` with `words`, `start`, `end`, `text`).
+
+### `matcher.py`
+- Function `normalize(text: str) -> str`
+  - Lowercase, remove punctuation, collapse multiple spaces.
+- Function `find_phrase(transcript: dict, target: str, threshold: float = 0.9) -> dict`
+  - Normalize target and split into words.
+  - Extract all words from transcript segments (`segment["words"]`) with their `start`, `end`, `word`, and `score`.
+  - Use a sliding window of N consecutive words where N = word count of target (after normalization).
+  - For each window, join words, normalize, and compute `rapidfuzz.fuzz.ratio` and `fuzz.partial_ratio`.
+  - If score >= threshold, add to candidates.
+  - Return:
+    - If found: `{"status": "found", "start": float, "text": str, "score": float, "candidates": [...]}`
+    - If not found: `{"status": "not_found", "candidates": [...]}` where candidates are the top 10 by score, sorted descending.
+  - Ensure timestamps are floats (seconds).
+
+### `locate_phrase.py` (main script)
+- Accept command-line arguments: `python locate_phrase.py <video_url> <target_phrase>`
+- Create an output directory (`output/` by default) to store artifacts.
+- Step 1: Download audio using `downloader.download_audio(url, output_dir/"audio")`
+- Step 2: Transcribe using `transcriber.transcribe(audio_path, "large", output_dir/"transcript.json")`
+- Step 3: Find phrase using `matcher.find_phrase(transcript, target, threshold=0.9)`
+- Print:
+  - If found: `Found: '<text>' at <start>s (score <score>)` and save `result.json` with `{"timestamp": start, "text": text, "confidence": score}`.
+  - If not found: print `Phrase not found above threshold. Best candidates:` and list top 5 with score, start, text.
+- Include basic logging with step numbers.
+
+## Update `backend/requirements.txt`
+Add the following dependencies (one per line):
+yt-dlp
+openai-whisper
+rapidfuzz
+numpy
+
+(No need to include `ffmpeg` because it is a system package; note in comments that ffmpeg must be installed separately.)
+
+## Important Notes
+- All code must be Python 3.11 compatible and follow PEP 8.
+- Use `pathlib.Path` for file paths.
+- The virtual environment is at `backend/venv`; you do **not** need to activate it, just generate files.
+- Do **not** create a FastAPI app or any frontend code. This is only the ML pipeline.
+- Do not include any OCR; this is ASR only.
+
+## Expected Output
+After generation, I should be able to run:
+cd backend
+source venv/bin/activate
+pip install -r requirements.txt
+python ml/locate_phrase.py "https://ok.ru/video/248244667877" "My mind rebels at stagnation"
+and see the timestamp and confidence printed, plus transcript.json and result.json in backend/ml/output/.
+
+Generate all files now.
+
+
 #Improving the base model
 Now, i need you to two do 2 things:
 1.corresponding video frame as an imag -> the exact  frame image nedds to be saved as image
@@ -14,19 +105,16 @@ Text : "My mind rebels at stagnation"
 
 #output structuring
 Currently, locate_phrase.py saves all outputs (transcript.json, result.json, frame image) in a fixed output directory, overwriting previous results. Modify locate_phrase.py so that for each run, a new timestamped subfolder is created inside a top-level results/ directory, e.g., results/20250927_103000/ (or using a unique ID). Inside that subfolder, save:
-
 result.json
-
 result.txt (a human-readable summary)
-
 frame.png (or the extracted frame image with any name)
-
 transcript.json (keep it for debugging)
-
 The script should accept an optional --output-dir argument (default "results") to specify the top-level folder, and it will create the run subfolder automatically. All existing functionality (download audio, transcribe, match, frame extraction) remains unchanged. Ensure the code creates directories as needed and does not overwrite previous runs.
+
 
 #Caching video:
 Just confirm one thing for me: Are videos that have already been downloaded stored locally, or is the same video downloaded again every time I run the program?
+
 
 #Backend Server Initialization main prompt:
 Create a FastAPI backend that wraps the existing ML pipeline located in `backend/ml/`. The pipeline currently accepts a video URL and target phrase, downloads/uses cached media, transcribes with Whisper, locates phrase occurrences, extracts frames, and saves results into a new timestamped folder inside `backend/ml/results/`.
@@ -106,11 +194,11 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 from the `backend/` directory.
 
 
-Multiple output detection
-When i ran whatever it takes in avengers endgame trailer, before , all 4 where showing up, now only one shows up, why? Give me reason, dont change the code 
+#Multiple output detection
+When i ran whatever it takes in avengers endgame trailer, before , all 4 where showing up, now only one shows up, why? Give me reason, dont change the code
 
 
-Gruvbox theme:
+#Gruvbox theme:
 Change the color theme of the existing React frontend in `c:\Ankith\Quest1_2\frontend` to **Gruvbox (Dark)** while keeping the current design, layout, components, and functionality exactly as they are.
 
 Requirements:
@@ -132,17 +220,15 @@ The goal is a clean, elegant, non-AI-generated look using the Gruvbox earthy pal
 #Challenged_faced.md:
 Challenges_faced:
 ->mutliple outputs
-->whisper multiple models 
+->whisper multiple models
 ->multiple language problem (although whsiper supports, transliteration problem)
 ->polling earlier problem in prev verison
 ->caching
-->storing results everytime in structred way 
-
+->storing results everytime in structred way
 
 these are the challnegse we faced in the project
 Create a document isnide documentations named 'Challenges_faced.md'
 Describe 2-3 lines for each challenge emntione,d which we encountered in this porject.
-
 
 
 #SRS.md:
@@ -150,9 +236,13 @@ Generate a concise SRS document for the Video Dialogue Locator project. Base it 
 
 
 #arch_diagram.md:
-There is a folder called documentations, specifically for all .md files. Your first task is to create arch_diagram.md file inside it, whcih contaisn the whole architecture diagram of the project, including everything frontend and backend. 
+There is a folder called documentations, specifically for all .md files. Your first task is to create arch_diagram.md file inside it, whcih contaisn the whole architecture diagram of the project, including everything frontend and backend.
 Create a simple, clean arch diagram , not bvery complex, only the arch diagram
 
 
 Design-decision.md:
 Create a design-decisions document (`docs/design-decisions.md`) that explains the key technical choices and trade-offs in this project. For each decision, describe the alternatives considered, the chosen approach, and why it was selected. Reference the implemented code. Cover: ASR vs OCR, Whisper model size and escalation, download strategy (audio-only + low-res video), frame extraction method, fuzzy matching algorithm, job handling (BackgroundTasks vs Celery), polling, caching, multilingual transliteration, and error/confidence handling. Use a table or bullet format for clarity. Be concise but thorough.
+
+
+#video-metadata:
+how to get meteadata of a video, to ensure you get the correct frame numbers, precise
