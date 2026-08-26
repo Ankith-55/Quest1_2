@@ -54,10 +54,10 @@ export default function JobStatus({ job }) {
             }}
             title="Click to copy Job ID"
           >
-            <code style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: '#93c5fd' }}>
+            <code style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: 'var(--accent-cyan)' }}>
               {job_id}
             </code>
-            {copiedId ? <Check size={12} color="#10b981" /> : <Copy size={12} color="var(--text-muted)" />}
+            {copiedId ? <Check size={12} color="var(--accent-emerald)" /> : <Copy size={12} color="var(--text-muted)" />}
           </div>
         </div>
 

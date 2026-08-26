@@ -1,0 +1,7 @@
+->mutliple outputs
+->whisper multiple models 
+->multiple language problem (although whsiper supports, transliteration problem)
+->polling earlier problem in prev verison
+->caching
+->storing results everytime in structred way 
+->

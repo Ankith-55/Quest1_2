@@ -186,8 +186,8 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '3rem' }}>
-        <p>Video Dialogue Locator • Whisper ASR • RapidFuzz • OpenCV • FastAPI • React + Vite</p>
+      <footer style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '3rem' }}>
+        <p>Developed by Ankith Vijayyan</p>
       </footer>
     </div>
   );

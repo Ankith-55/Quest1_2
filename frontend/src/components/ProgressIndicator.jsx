@@ -19,7 +19,7 @@ export default function ProgressIndicator({ status, startedAt }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
           Pipeline State:{' '}
-          <strong style={{ color: isFinished ? 'var(--accent-emerald)' : isFailed ? 'var(--accent-rose)' : '#ffffff' }}>
+          <strong style={{ color: isFinished ? 'var(--accent-emerald)' : isFailed ? 'var(--accent-rose)' : 'var(--text-primary)' }}>
             {status ? status.toUpperCase() : 'QUEUED'}
           </strong>
         </span>
@@ -42,10 +42,10 @@ export default function ProgressIndicator({ status, startedAt }) {
           style={{
             width: isFinished ? '100%' : isProcessing ? '65%' : isFailed ? '100%' : '15%',
             background: isFailed
-              ? 'linear-gradient(90deg, #f43f5e, #e11d48)'
+              ? 'linear-gradient(90deg, var(--accent-rose), #cc241d)'
               : isFinished
-              ? 'linear-gradient(90deg, #10b981, #06b6d4)'
-              : 'linear-gradient(90deg, #6366f1, #06b6d4)',
+              ? 'linear-gradient(90deg, var(--accent-emerald), var(--accent-cyan))'
+              : 'linear-gradient(90deg, var(--accent-primary), var(--accent-amber))',
           }}
         ></div>
       </div>

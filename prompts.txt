@@ -103,6 +103,27 @@ backend/
 
 Make sure the FastAPI app can be run with:
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-
-
 from the `backend/` directory.
+
+
+Multiple output detection
+When i ran whatever it takes in avengers endgame trailer, before , all 4 where showing up, now only one shows up, why? Give me reason, dont change the code 
+
+
+Gruvbox theme:
+Change the color theme of the existing React frontend in `c:\Ankith\Quest1_2\frontend` to **Gruvbox (Dark)** while keeping the current design, layout, components, and functionality exactly as they are.
+
+Requirements:
+- Update all colors (backgrounds, text, buttons, accents, borders, shadows, gradients, etc.) to the following Gruvbox dark palette:
+  - Background: #282828
+  - Foreground / main text: #EBDBB2
+  - Accent / primary: #FE8019 (burnt orange)
+  - Secondary / success: #B8BB26 (soft green)
+  - Additional colors as needed: #3C3836 (surface), #504945 (border), #83A598 (blue), #D3869B (pink), #D65D0E (dark orange)
+- Preserve the existing visual design language (glassmorphism, rounded corners, spacing, layout, animations) and just replace the color values.
+- Modify the CSS custom properties in `src/index.css` first, then update any hardcoded colors in individual component files if they conflict.
+- Ensure that all text remains readable (good contrast) and interactive elements (buttons, inputs, badges) are still clearly distinguishable.
+- Do not change any component logic, props, API calls, or functionality. Only colors.
+- After changes, run `npm run build` to verify no compilation errors.
+
+The goal is a clean, elegant, non-AI-generated look using the Gruvbox earthy palette.
