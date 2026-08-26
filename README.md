@@ -82,10 +82,10 @@ flowchart TD
 
 For deeper technical insights, explore the dedicated documentation files:
 
-* 📄 **[Software Requirements Specification (SRS)](documentations/SRS.md)**: Formal requirements, problem evolution from OCR to ASR, and functional specifications.
-* 📐 **[Technical Design Decisions](documentations/design-decisions.md)**: Architectural choices, trade-offs, algorithms, and code references.
-* ⚠️ **[Challenges Faced & Solutions](documentations/Challenges_faced.md)**: Practical obstacles encountered during development (caching, geoblocking, NMS, polling) and how they were resolved.
-* 🏛️ **[Architecture Diagram](documentations/arch_diagram.md)**: Clean Mermaid system diagram and end-to-end component flow.
+* **[Software Requirements Specification (SRS)](documentations/SRS.md)**: Formal requirements, problem evolution from OCR to ASR, and functional specifications.
+* **[Technical Design Decisions](documentations/design-decisions.md)**: Architectural choices, trade-offs, algorithms, and code references.
+* **[Challenges Faced & Solutions](documentations/Challenges_faced.md)**: Practical obstacles encountered during development (caching, geoblocking, NMS, polling) and how they were resolved.
+* **[Architecture Diagram](documentations/arch_diagram.md)**: Clean Mermaid system diagram and end-to-end component flow.
 
 ---
 
